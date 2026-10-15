@@ -1,0 +1,29 @@
+{
+  "id": "magic-dj-honor",
+  "name": "Magic Spotify DJ",
+  "short_name": "MagicDJ",
+  "description": "Lecteur audio et table de mixage sur mesure pour HONOR",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#121212",
+  "theme_color": "#1db954",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844724.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844724.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

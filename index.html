@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1db954">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MagicDJ">
+    <title>Magic Spotify DJ - Honor Ultimate</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3844/3844724.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3844/3844724.png">
+
+    <style>
+        :root {
+            --spotify-black: #121212;
+            --spotify-card: #181818;
+            --spotify-card-hover: #282828;
+            --spotify-green: #1db954;
+            --spotify-text: #ffffff;
+            --spotify-subtext: #b3b3b3;
+            --honorgold: #e6b800;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        body {
+            background-color: var(--spotify-black);
+            color: var(--spotify-text);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .app-container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page { display: none; flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 130px; }
+        .page.active { display: block; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; font-weight: 700; }
+        .magic-capsule-badge {
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--spotify-green);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px;
+            background: var(--spotify-green);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; margin-top: 15px; }
+
+        .track-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; border-radius: 8px; margin-bottom: 8px;
+            background: var(--spotify-card);
+            transition: background 0.2s;
+        }
+        .track-row:active { background: var(--spotify-card-hover); }
+        .track-info { display: flex; flex-direction: column; overflow: hidden; padding-right: 10px; flex: 1; min-width: 0; }
+        .track-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-artist { font-size: 12px; color: var(--spotify-subtext); }
+
+        .mini-player {
+            position: fixed; bottom: 65px; left: 10px; right: 10px;
+            max-width: 780px; margin: 0 auto;
+            background: #282828; border-radius: 10px;
+            padding: 12px 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            z-index: 999;
+        }
+        .mini-info { flex: 1; overflow: hidden; margin-right: 15px; }
+        .mini-title { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mini-controls button { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; margin-left: 15px; }
+
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
+            background: #000; display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--spotify-subtext); font-size: 11px; cursor: pointer;
+            background: none; border: none; padding: 8px 16px;
+        }
+        .nav-item.active { color: var(--spotify-text); }
+        .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+
+        .dj-container { display: flex; flex-direction: column; gap: 20px; }
+        .dj-card { background: var(--spotify-card); border-radius: 16px; padding: 18px; border: 1px solid rgba(255,255,255,0.05); }
+        .decks-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .deck-box {
+            flex: 1; min-width: 220px;
+            background: #121212; border-radius: 12px; padding: 15px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .vinyl-disc {
+            width: 110px; height: 110px; border-radius: 50%;
+            background: repeating-radial-gradient(#111, #111 2px, #222 3px, #222 4px);
+            border: 4px solid var(--spotify-green);
+            margin: 12px auto;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .deck-b .vinyl-disc { border-color: var(--honorgold); }
+        .vinyl-inner { width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 2px solid #000; }
+        .spin { animation: rotation 2s linear infinite; }
+        @keyframes rotation { 100% { transform: rotate(360deg); } }
+
+        .eq-grid { display: flex; justify-content: space-between; height: 140px; align-items: flex-end; padding-top: 10px; overflow-x: auto; }
+        .eq-col { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 4px; }
+        .eq-slider {
+            writing-mode: vertical-lr;
+            direction: rtl;
+            -webkit-appearance: slider-vertical;
+            width: 16px; height: 90px;
+            accent-color: var(--spotify-green);
+        }
+        .eq-txt { font-size: 10px; color: var(--spotify-subtext); }
+
+        .btn-spotify {
+            background: var(--spotify-green); color: #000; font-weight: bold;
+            border: none; padding: 12px; border-radius: 24px;
+            width: 100%; cursor: pointer; font-size: 14px; margin-top: 8px;
+            transition: transform 0.1s;
+        }
+        .btn-spotify:active { transform: scale(0.98); }
+        .btn-small { padding: 6px 12px; font-size: 11px; width: auto; margin: 0; }
+        .btn-deck { background: var(--spotify-green); }
+        .btn-deck-b { background: var(--honorgold); color: #000; }
+
+        .eq-target {
+            display: flex; gap: 6px; margin-bottom: 10px;
+        }
+        .eq-target button {
+            flex: 1; padding: 6px; background: #121212; color: var(--spotify-subtext);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+        }
+        .eq-target button.active { background: var(--spotify-green); color: #000; border-color: var(--spotify-green); }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- PAGE 1 : ACCUEIL -->
+    <div id="page-home" class="page active">
+        <div class="header">
+            <h1>Bibliothèque</h1>
+            <div class="magic-capsule-badge">
+                <div class="pulse-dot"></div>
+                Magic Capsule Active
+            </div>
+        </div>
+
+        <div class="dj-card" style="margin-bottom: 20px; text-align: center;">
+            <p style="font-size: 13px; color: var(--spotify-subtext); margin-bottom: 12px;">
+                Sélectionne ton dossier de musiques (Smartphone ou Tablette Honor) :
+            </p>
+            <input type="file" id="localFiles" webkitdirectory directory multiple accept="audio/*" style="display:none;" onchange="importFolder(event)">
+            <button class="btn-spotify" onclick="document.getElementById('localFiles').click()">📂 Importer mes musiques</button>
+        </div>
+
+        <div class="section-title">Morceaux disponibles (<span id="countTracks">0</span>)</div>
+        <div id="trackListContainer">
+            <div style="color: var(--spotify-subtext); font-size: 13px; text-align: center; padding: 30px;">Aucun dossier chargé pour l'instant.</div>
+        </div>
+    </div>
+
+    <!-- PAGE 2 : STUDIO DJ -->
+    <div id="page-dj" class="page">
+        <div class="header">
+            <h1>Studio DJ Pro</h1>
+            <div class="magic-capsule-badge" style="color: var(--honorgold);">
+                <div class="pulse-dot" style="background: var(--honorgold);"></div>
+                Mix Mode
+            </div>
+        </div>
+
+        <div class="dj-container">
+            <!-- Platines -->
+            <div class="dj-card">
+                <div style="font-size: 13px; font-weight: bold; margin-bottom: 12px; color: var(--spotify-green);">
+                    PLATINES DE MIXAGE (DECK A / B)
+                </div>
+                <div class="decks-row">
+                    <div class="deck-box">
+                        <div style="font-size: 12px; font-weight: bold; color: var(--spotify-green);">DECK A</div>
+                        <div class="vinyl-disc" id="deckAVinyl"><div class="vinyl-inner"></div></div>
+                        <audio id="audioA" controls style="width:100%; height:30px; margin-top:8px;"></audio>
+                    </div>
+                    <div class="deck-box deck-b">
+                        <div style="font-size: 12px; font-weight: bold; color: var(--honorgold);">DECK B</div>
+                        <div class="vinyl-disc" id="deckBVinyl"><div class="vinyl-inner"></div></div>
+                        <audio id="audioB" controls style="width:100%; height:30px; margin-top:8px;"></audio>
+                    </div>
+                </div>
+
+                <div style="margin-top: 18px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--spotify-subtext); margin-bottom: 6px;">
+                        CROSSFADER (A ⟷ B)
+                    </div>
+                    <input type="range" id="crossfader" min="0" max="100" value="50" style="width: 100%; accent-color: var(--spotify-green);">
+                </div>
+            </div>
+
+            <!-- Égaliseur -->
+            <div class="dj-card">
+                <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">Égaliseur Pro 10 Bandes</div>
+                <div class="eq-target">
+                    <button data-target="A" onclick="setEqTarget('A', this)">DECK A</button>
+                    <button data-target="both" class="active" onclick="setEqTarget('both', this)">LES DEUX</button>
+                    <button data-target="B" onclick="setEqTarget('B', this)">DECK B</button>
+                </div>
+                <div class="eq-grid" id="eqGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINI LECTEUR -->
+    <div class="mini-player" id="miniPlayer" style="display: none;">
+        <div class="mini-info">
+            <div class="mini-title" id="miniTitle">Aucune piste</div>
+            <div style="font-size: 11px; color: var(--spotify-subtext);">Lecture en arrière-plan active</div>
+        </div>
+        <div class="mini-controls">
+            <button id="miniPlayBtn" onclick="toggleMainPlay()">▶️</button>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="nav-bar">
+        <button class="nav-item active" onclick="switchPage('home', this)">
+            <span class="icon">🏠</span>
+            <span>Accueil</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('dj', this)">
+            <span class="icon">🎚️</span>
+            <span>Studio DJ</span>
+        </button>
+    </div>
+
+</div>
+
+<audio id="mainAudio" style="display:none;"></audio>
+
+<script>
+/* ============================================================
+   1. NAVIGATION ENTRE PAGES
+   ============================================================ */
+function switchPage(pageId, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + pageId).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+/* ============================================================
+   2. BIBLIOTHÈQUE DE MUSIQUES
+   ============================================================ */
+let tracksLibrary = [];
+
+function importFolder(event) {
+    const files = event.target.files;
+    tracksLibrary = [];
+    const container = document.getElementById('trackListContainer');
+    container.innerHTML = '';
+    let count = 0;
+
+    for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        if (f.type.startsWith('audio/') || /\.(mp3|flac|m4a|wav|ogg|aac)$/i.test(f.name)) {
+            const idx = tracksLibrary.length;
+            tracksLibrary.push(f);
+            count++;
+
+            const div = document.createElement('div');
+            div.className = 'track-row';
+            div.innerHTML = `
+                <div class="track-info">
+                    <span class="track-name">${escapeHtml(f.name)}</span>
+                    <span class="track-artist">Stockage Local • Honor MagicOS</span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                    <button class="btn-spotify btn-small" onclick="playTrack(${idx})" title="Lire">▶</button>
+                    <button class="btn-spotify btn-small btn-deck" onclick="sendToDeck(${idx}, 'A')" title="Deck A">→ A</button>
+                    <button class="btn-spotify btn-small btn-deck-b" onclick="sendToDeck(${idx}, 'B')" title="Deck B">→ B</button>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+    }
+    document.getElementById('countTracks').innerText = count;
+}
+
+function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/* ============================================================
+   3. LECTEUR PRINCIPAL (mini-player + Magic Capsule)
+   ============================================================ */
+let mainBlobUrl = null;
+
+function playTrack(index) {
+    const file = tracksLibrary[index];
+    if (!file) return;
+    const audio = document.getElementById('mainAudio');
+
+    if (mainBlobUrl) URL.revokeObjectURL(mainBlobUrl);
+    mainBlobUrl = URL.createObjectURL(file);
+
+    audio.src = mainBlobUrl;
+    audio.play().catch(e => console.warn('Lecture impossible:', e));
+
+    document.getElementById('miniPlayer').style.display = 'flex';
+    document.getElementById('miniTitle').innerText = file.name;
+    updateMiniBtn();
+
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: file.name.replace(/\.[^.]+$/, ''),
+            artist: 'Honor Magic Player',
+            album: 'Musique Locale',
+            artwork: [
+                { src: 'https://cdn-icons-png.flaticon.com/512/3844/3844724.png', sizes: '512x512', type: 'image/png' }
+            ]
+        });
+        navigator.mediaSession.setActionHandler('play',  () => { audio.play();  updateMiniBtn(); });
+        navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); updateMiniBtn(); });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            const cur = tracksLibrary.indexOf(file);
+            if (cur > 0) playTrack(cur - 1);
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            const cur = tracksLibrary.indexOf(file);
+            if (cur >= 0 && cur < tracksLibrary.length - 1) playTrack(cur + 1);
+        });
+    }
+}
+
+function toggleMainPlay() {
+    const audio = document.getElementById('mainAudio');
+    if (audio.paused) audio.play().catch(e => console.warn(e));
+    else audio.pause();
+    updateMiniBtn();
+}
+
+function updateMiniBtn() {
+    const audio = document.getElementById('mainAudio');
+    const btn = document.getElementById('miniPlayBtn');
+    if (btn) btn.textContent = audio.paused ? '▶️' : '⏸️';
+}
+
+document.getElementById('mainAudio').addEventListener('play',  updateMiniBtn);
+document.getElementById('mainAudio').addEventListener('pause', updateMiniBtn);
+
+/* ============================================================
+   4. STUDIO DJ : envoi vers Deck A ou B
+   ============================================================ */
+const deckBlob = { A: null, B: null };
+
+function sendToDeck(index, deck) {
+    const file = tracksLibrary[index];
+    if (!file) return;
+
+    ensureAudioGraph(); // init Web Audio au premier clic
+
+    const audio = document.getElementById('audio' + deck);
+    if (deckBlob[deck]) URL.revokeObjectURL(deckBlob[deck]);
+    deckBlob[deck] = URL.createObjectURL(file);
+    audio.src = deckBlob[deck];
+    audio.play().catch(e => console.warn('Lecture deck ' + deck + ':', e));
+
+    switchPage('dj', document.querySelectorAll('.nav-item')[1]);
+}
+
+// Vinyle : rotation liée à la lecture réelle
+[['audioA', 'deckAVinyl'], ['audioB', 'deckBVinyl']].forEach(([a, v]) => {
+    const audio = document.getElementById(a);
+    const vinyl = document.getElementById(v);
+    audio.addEventListener('play',  () => vinyl.classList.add('spin'));
+    audio.addEventListener('pause', () => vinyl.classList.remove('spin'));
+    audio.addEventListener('ended', () => vinyl.classList.remove('spin'));
+});
+
+/* ============================================================
+   5. WEB AUDIO API : crossfader + égaliseur 10 bandes réels
+   ============================================================ */
+const EQ_FREQS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+const eqGains = new Array(10).fill(0); // valeurs actuelles des sliders
+let audioCtx = null;
+const deckGraphs = { A: null, B: null };
+let eqTarget = 'both';
+
+function ensureAudioGraph() {
+    if (audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return;
+    }
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.warn('Web Audio non supporté:', e);
+        return;
+    }
+
+    ['A', 'B'].forEach(deck => {
+        const el = document.getElementById('audio' + deck);
+        const src = audioCtx.createMediaElementSource(el);
+
+        const filters = EQ_FREQS.map((freq, i) => {
+            const f = audioCtx.createBiquadFilter();
+            if (i === 0) f.type = 'lowshelf';
+            else if (i === EQ_FREQS.length - 1) f.type = 'highshelf';
+            else { f.type = 'peaking'; f.Q.value = 1; }
+            f.frequency.value = freq;
+            f.gain.value = 0;
+            return f;
+        });
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.7; // valeur neutre au centre du crossfader
+
+        // Chaîne : src → f0 → f1 → … → f9 → gain → destination
+        let node = src;
+        filters.forEach(f => { node.connect(f); node = f; });
+        node.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        deckGraphs[deck] = { filters, gain };
+    });
+
+    applyCrossfader(parseInt(document.getElementById('crossfader').value, 10));
+}
+
+/* --- Crossfader --- */
+const crossfaderEl = document.getElementById('crossfader');
+crossfaderEl.addEventListener('input', e => {
+    ensureAudioGraph();
+    applyCrossfader(parseInt(e.target.value, 10));
+});
+
+function applyCrossfader(v01to100) {
+    if (!audioCtx) return;
+    const v = v01to100 / 100;
+    // Courbe cosinus (standard DJ) : gainA² + gainB² = 1
+    deckGraphs.A.gain.gain.value = Math.cos(v * Math.PI / 2);
+    deckGraphs.B.gain.gain.value = Math.cos((1 - v) * Math.PI / 2);
+}
+
+/* --- Construction des sliders EQ dans le DOM --- */
+const eqGrid = document.getElementById('eqGrid');
+EQ_FREQS.forEach((freq, i) => {
+    const col = document.createElement('div');
+    col.className = 'eq-col';
+    const label = freq >= 1000 ? (freq / 1000) + 'kHz' : freq + 'Hz';
+    col.innerHTML = `
+        <input type="range" class="eq-slider" min="-12" max="12" value="0" step="1" data-idx="${i}">
+        <span class="eq-txt">${label}</span>
+    `;
+    eqGrid.appendChild(col);
+});
+
+eqGrid.addEventListener('input', e => {
+    if (!e.target.classList.contains('eq-slider')) return;
+    ensureAudioGraph();
+    const idx = parseInt(e.target.dataset.idx, 10);
+    const value = parseFloat(e.target.value);
+    eqGains[idx] = value;
+    applyEq();
+});
+
+function setEqTarget(target, btn) {
+    eqTarget = target;
+    document.querySelectorAll('.eq-target button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function applyEq() {
+    if (!audioCtx) return;
+    const decks = eqTarget === 'both' ? ['A', 'B'] : [eqTarget];
+    decks.forEach(d => {
+        const g = deckGraphs[d];
+        if (!g) return;
+        g.filters.forEach((f, i) => {
+            // On ajuste en douceur pour éviter les clics audio
+            f.gain.setTargetAtTime(eqGains[i], audioCtx.currentTime, 0.02);
+        });
+    });
+}
+
+/* ============================================================
+   6. SERVICE WORKER (PWA + mode hors-ligne)
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('✅ Service Worker enregistré'))
+            .catch(err => console.warn('⚠️ Service Worker:', err));
+    });
+}
+
+/* ============================================================
+   7. Reprise du contexte audio au premier geste utilisateur
+   ============================================================ */
+['click', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, () => {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: false, passive: true });
+});
+</script>
+</body>
+</html>
